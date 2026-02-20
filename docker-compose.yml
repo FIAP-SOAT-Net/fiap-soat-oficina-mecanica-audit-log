@@ -42,8 +42,8 @@ services:
       - mechanical-workshop-network
 
   audit-log-worker:
-    image: ${DOCKERHUB_USERNAME}/smart-mechanical-workshop-audit-log-worker:${IMAGE_TAG:-latest}
-    container_name: smart-mechanical-workshop-audit-log-worker
+    image: ${DOCKERHUB_USERNAME}/smart-mechanical-workshop-auditlog-worker:${IMAGE_TAG:-latest}
+    container_name: smart-mechanical-workshop-auditlog-worker
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -60,9 +60,9 @@ services:
       MongoDB__UserName: ${MONGO_ROOT_USER}
       MongoDB__Password: ${MONGO_ROOT_PASSWORD}
       NewRelic__Enabled: ${NEW_RELIC_ENABLED:-false}
-      NewRelic__AppName: ${NEW_RELIC_APP_NAME:-smart-mechanical-workshop-audit-log-worker}
+      NewRelic__AppName: ${NEW_RELIC_APP_NAME:-smart-mechanical-workshop-auditlog-worker}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
-      NEW_RELIC_APP_NAME: ${NEW_RELIC_APP_NAME:-smart-mechanical-workshop-audit-log-worker}
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_APP_NAME:-smart-mechanical-workshop-auditlog-worker}
     healthcheck:
       test: ["CMD", "pgrep", "-f", "dotnet"]
       interval: 30s

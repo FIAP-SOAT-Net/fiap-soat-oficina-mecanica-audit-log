@@ -45,7 +45,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: smart-mechanical-workshop-audit-log-worker-dev
+    container_name: smart-mechanical-workshop-auditlog-worker-dev
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
