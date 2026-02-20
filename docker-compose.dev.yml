@@ -1,0 +1,84 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: smart-mechanical-workshop-mongodb-dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data_dev:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - mechanical-workshop-dev-network
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: smart-mechanical-workshop-rabbitmq-dev
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data_dev:/var/lib/rabbitmq
+      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - mechanical-workshop-dev-network
+
+  audit-log-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-mechanical-workshop-audit-log-worker-dev
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      Logging__LogLevel__Default: ${LOG_LEVEL:-Information}
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__UserName: ${RABBITMQ_USER}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      RabbitMQ__ExchangeName: ${RABBITMQ_EXCHANGE_NAME:-database.events.exchange}
+      RabbitMQ__QueueName: ${RABBITMQ_QUEUE_NAME:-database.events}
+      MongoDB__ConnectionString: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017
+      MongoDB__DatabaseName: ${MONGO_DATABASE:-AuditLog}
+      MongoDB__CollectionName: ${MONGO_COLLECTION:-Events}
+      MongoDB__UserName: ${MONGO_ROOT_USER}
+      MongoDB__Password: ${MONGO_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "dotnet"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - mechanical-workshop-dev-network
+
+volumes:
+  mongodb_data_dev:
+  rabbitmq_data_dev:
+
+networks:
+  mechanical-workshop-dev-network:
+    driver: bridge
