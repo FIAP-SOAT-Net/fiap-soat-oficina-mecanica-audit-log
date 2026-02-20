@@ -1,8 +1,8 @@
-using System.Text;
 using Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker.Configuration;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Text;
 
 namespace Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker.Services;
 

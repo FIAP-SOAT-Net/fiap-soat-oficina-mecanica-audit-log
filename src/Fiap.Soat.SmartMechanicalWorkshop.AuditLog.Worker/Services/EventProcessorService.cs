@@ -1,6 +1,6 @@
-using System.Text.Json;
 using Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker.Models;
 using Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker.Repositories;
+using System.Text.Json;
 
 namespace Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker.Services;
 
