@@ -1,0 +1,7 @@
+﻿services:
+  fiap.soat.smartmechanicalworkshop.auditlog.worker:
+    image: fiap.soat.smartmechanicalworkshop.auditlog.worker
+    build:
+      context: .
+      dockerfile: src/Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker/Dockerfile
+
