@@ -4,24 +4,15 @@ using System.Text.Json;
 
 namespace Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker.Services;
 
-public class EventProcessorService : IEventProcessorService
+public class EventProcessorService(
+    IAuditLogRepository repository,
+    ILogger<EventProcessorService> logger) : IEventProcessorService
 {
-    private readonly IAuditLogRepository _repository;
-    private readonly ILogger<EventProcessorService> _logger;
-
-    public EventProcessorService(
-        IAuditLogRepository repository,
-        ILogger<EventProcessorService> logger)
-    {
-        _repository = repository;
-        _logger = logger;
-    }
-
     public async Task ProcessEventAsync(string message, CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Processing event message");
+            logger.LogInformation("Processing event message");
 
             using var jsonDocument = JsonDocument.Parse(message);
             var root = jsonDocument.RootElement;
@@ -47,13 +38,13 @@ public class EventProcessorService : IEventProcessorService
                 ReceivedAt = DateTime.UtcNow
             };
 
-            await _repository.SaveEventAsync(auditEvent, cancellationToken);
+            await repository.SaveEventAsync(auditEvent, cancellationToken);
 
-            _logger.LogInformation("Event processed successfully: {EventType}", auditEvent.EventType);
+            logger.LogInformation("Event processed successfully: {EventType}", auditEvent.EventType);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing event");
+            logger.LogError(ex, "Error processing event");
             throw;
         }
     }

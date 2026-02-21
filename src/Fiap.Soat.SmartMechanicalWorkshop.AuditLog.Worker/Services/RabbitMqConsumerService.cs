@@ -6,20 +6,14 @@ using System.Text;
 
 namespace Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker.Services;
 
-public class RabbitMqConsumerService : IRabbitMqConsumerService
+public class RabbitMqConsumerService(
+    IOptions<RabbitMqConfiguration> config,
+    ILogger<RabbitMqConsumerService> logger)
+    : IRabbitMqConsumerService
 {
-    private readonly ILogger<RabbitMqConsumerService> _logger;
-    private readonly RabbitMqConfiguration _config;
+    private readonly RabbitMqConfiguration _config = config.Value;
     private IConnection? _connection;
     private IChannel? _channel;
-
-    public RabbitMqConsumerService(
-        IOptions<RabbitMqConfiguration> config,
-        ILogger<RabbitMqConsumerService> logger)
-    {
-        _logger = logger;
-        _config = config.Value;
-    }
 
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
@@ -33,7 +27,7 @@ public class RabbitMqConsumerService : IRabbitMqConsumerService
                 Password = _config.Password
             };
 
-            _logger.LogInformation("Connecting to RabbitMQ: {HostName}:{Port}",
+            logger.LogInformation("Connecting to RabbitMQ: {HostName}:{Port}",
                 _config.HostName, _config.Port);
 
             _connection = await factory.CreateConnectionAsync(cancellationToken);
@@ -64,11 +58,11 @@ public class RabbitMqConsumerService : IRabbitMqConsumerService
 
             await _channel.BasicQosAsync(0, 1, false, cancellationToken);
 
-            _logger.LogInformation("RabbitMQ connection established successfully");
+            logger.LogInformation("RabbitMQ connection established successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error connecting to RabbitMQ");
+            logger.LogError(ex, "Error connecting to RabbitMQ");
             throw;
         }
     }
@@ -90,16 +84,16 @@ public class RabbitMqConsumerService : IRabbitMqConsumerService
                 var body = eventArgs.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
 
-                _logger.LogInformation("Message received from RabbitMQ");
+                logger.LogInformation("Message received from RabbitMQ");
 
                 await messageHandler(message, cancellationToken);
                 await _channel.BasicAckAsync(eventArgs.DeliveryTag, false, cancellationToken);
 
-                _logger.LogInformation("Message acknowledged successfully");
+                logger.LogInformation("Message acknowledged successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing message, sending Nack");
+                logger.LogError(ex, "Error processing message, sending Nack");
                 await _channel.BasicNackAsync(eventArgs.DeliveryTag, false, true, cancellationToken);
             }
         };
@@ -110,12 +104,12 @@ public class RabbitMqConsumerService : IRabbitMqConsumerService
             consumer: consumer,
             cancellationToken: cancellationToken);
 
-        _logger.LogInformation("Started consuming messages from queue: {QueueName}", _config.QueueName);
+        logger.LogInformation("Started consuming messages from queue: {QueueName}", _config.QueueName);
     }
 
     public async Task DisconnectAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Disconnecting from RabbitMQ");
+        logger.LogInformation("Disconnecting from RabbitMQ");
 
         if (_channel is not null)
         {
@@ -131,6 +125,6 @@ public class RabbitMqConsumerService : IRabbitMqConsumerService
             _connection = null;
         }
 
-        _logger.LogInformation("Disconnected from RabbitMQ");
+        logger.LogInformation("Disconnected from RabbitMQ");
     }
 }

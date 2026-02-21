@@ -2,35 +2,25 @@ using Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker.Services;
 
 namespace Fiap.Soat.SmartMechanicalWorkshop.AuditLog.Worker;
 
-public sealed class Worker : BackgroundService
+public sealed class Worker(
+    ILogger<Worker> logger,
+    IRabbitMqConsumerService rabbitMqConsumer,
+    IEventProcessorService eventProcessor)
+    : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
-    private readonly IRabbitMqConsumerService _rabbitMqConsumer;
-    private readonly IEventProcessorService _eventProcessor;
-
-    public Worker(
-        ILogger<Worker> logger,
-        IRabbitMqConsumerService rabbitMqConsumer,
-        IEventProcessorService eventProcessor)
-    {
-        _logger = logger;
-        _rabbitMqConsumer = rabbitMqConsumer;
-        _eventProcessor = eventProcessor;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
-            _logger.LogInformation("Starting Audit Log Worker");
+            logger.LogInformation("Starting Audit Log Worker");
 
-            await _rabbitMqConsumer.ConnectAsync(stoppingToken);
+            await rabbitMqConsumer.ConnectAsync(stoppingToken);
 
-            await _rabbitMqConsumer.StartConsumingAsync(
-                async (message, ct) => await _eventProcessor.ProcessEventAsync(message, ct),
+            await rabbitMqConsumer.StartConsumingAsync(
+                async (message, ct) => await eventProcessor.ProcessEventAsync(message, ct),
                 stoppingToken);
 
-            _logger.LogInformation("Worker is now consuming messages from RabbitMQ");
+            logger.LogInformation("Worker is now consuming messages from RabbitMQ");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -39,16 +29,16 @@ public sealed class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error in Worker execution");
+            logger.LogError(ex, "Unexpected error in Worker execution");
             throw;
         }
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Audit Log Worker is stopping");
+        logger.LogInformation("Audit Log Worker is stopping");
 
-        await _rabbitMqConsumer.DisconnectAsync(cancellationToken);
+        await rabbitMqConsumer.DisconnectAsync(cancellationToken);
 
         await base.StopAsync(cancellationToken);
     }
